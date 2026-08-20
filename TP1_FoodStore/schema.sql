@@ -13,7 +13,7 @@ drop table if exists categoria cascade;
 drop type if exists enum_forma_pago cascade;
 
 
---1. Definicion de tipos de datos
+--1. Creacion del enumerable "forma_pago"
 create type enum_forma_pago as enum ('efectivo', 'tarjeta', 'transferencia');
 
 
