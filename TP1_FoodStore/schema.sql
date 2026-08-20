@@ -48,7 +48,7 @@ create table producto(
     precio_lista numeric(10,2) not null,
     stock_actual integer not null default 0,
     activo boolean not null default true, --Regla de Negocios (R7) El producto ni categoria se borra fisicamente, solo se marcan como inactivos.
-    created_at timestamp not null default current_timestamp
+    created_at timestamp not null default current_timestamp,
 
     --Restriciones de dominio (R5) El precio de un producto no puede tener un valor negativo y el stock no puede ser menor a cero.
     constraint ck_precio_lista check (precio_lista >= 0),
