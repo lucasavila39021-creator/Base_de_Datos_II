@@ -79,7 +79,7 @@ create table detalle_pedido(
     id_pedido bigint not null,
     id_producto bigint not null,
     cantidad integer not null,
-    precio_unitario numeric(10, 2) not null, -- Regla de Negocios (R4) se guarda un registro de la cantidad de productos dentro de un pedido
+    precio_unitario numeric(10, 2) not null, -- Regla de Negocios (R4) Se guarda el precio del producto al momento del pedido (snapshot histórico).
 
     --Clave primaria compuesta
     primary key(id_pedido, id_producto),
