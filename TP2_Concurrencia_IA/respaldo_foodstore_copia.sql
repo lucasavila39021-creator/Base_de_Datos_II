@@ -1,0 +1,6 @@
+-- ============================================================================
+-- RESPALDO PREVENTIVO DE LA COPIA DE TRABAJO (PARTE 0)
+-- ============================================================================
+-- Simulación del volcado de base de datos ejecutado antes de cambios DDL
+-- Comando de referencia: pg_dump copia_trabajo > respaldo_foodstore_copia.sql
+-- Motor: PostgreSQL
