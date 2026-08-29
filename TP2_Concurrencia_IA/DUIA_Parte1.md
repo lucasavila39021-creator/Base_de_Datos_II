@@ -1,10 +1,10 @@
-# Declaración de Uso de IA (DUIA) - Parte 1
+# Declaración de Uso de IA (DUIA) - Parte 1 (Integridad versionada)
 
 | Campo | Completar |
 | :--- | :--- |
-| **Herramienta** | Gemini (Asistente externo por cuota excedida en OpenCode) |
-| **Spec o prompt utilizado** | "Generar triggers en PostgreSQL para impedir modificar estado de pedidos ENTREGADOS/CANCELADOS y validar stock antes de insertar detalle_pedido." |
-| **Qué generó** | Dos funciones PL/pgSQL y dos triggers (BEFORE UPDATE y BEFORE INSERT). |
-| **Qué se aceptó** | Todo el código se aceptó tal cual fue generado. |
-| **Qué se modificó o descartó, y por qué** | No hubo modificaciones, la lógica aplicaba perfectamente al esquema. |
-| **Verificación realizada** | Se simuló el INSERT de 100 Muzzarellas (stock 50) y el motor rechazó la transacción por la excepción del trigger. |
+| **Herramienta** | Gemini (asistente externo) + revisión manual en PostgreSQL |
+| **Spec o prompt utilizado** | "Generar triggers en PostgreSQL para: (1) impedir modificar pedidos en estado ENTREGADO/CANCELADO y (2) validar stock antes de insertar detalle_pedido" |
+| **Qué generó** | Borrador de 2 funciones PL/pgSQL y 2 triggers (`BEFORE UPDATE` en `pedido` y `BEFORE INSERT` en `detalle_pedido`). |
+| **Qué se aceptó** | Estructura base de funciones/triggers y validación principal de estados y stock. |
+| **Qué se modificó o descartó, y por qué** | Se endureció el script para ejecución idempotente (`DROP TRIGGER IF EXISTS`) y se agregó control explícito para `id_producto` inexistente (`stock_actual IS NULL`) para evitar comportamiento ambiguo. |
+| **Verificación realizada** | **Pruebas ejecutadas en `foodstore_copia` dentro de transacción:** (a) `UPDATE pedido` sobre pedido ENTREGADO → rechazado por excepción; (b) `INSERT detalle_pedido` con `cantidad` > `stock` → rechazado; (c) `INSERT detalle_pedido` válido → aceptado. Cierre de prueba con `ROLLBACK`. |

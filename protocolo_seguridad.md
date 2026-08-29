@@ -1,19 +1,68 @@
-# Protocolo de Seguridad - Base de Datos II
+# Protocolo de Seguridad - Base de Datos II (PostgreSQL)
 
-Este documento establece el protocolo de tres pasos obligatorio para interactuar con la base de datos utilizando herramientas de IA.
+Este protocolo es **obligatorio** para cualquier cambio sobre base de datos (manual o generado por IA).  
+Se aplica siempre sobre PostgreSQL y sobre una **copia de trabajo**, nunca sobre producción.
 
-## 1. Copia
-**Regla:** Se trabaja exclusivamente sobre una base de desarrollo local, nunca sobre datos reales.
-*   **Comando en mi entorno:** `CREATE DATABASE copia_trabajo;` (Usando XAMPP/MySQL)
+---
 
-## 2. Transacción
-**Regla:** Todo script de escritura se prueba primero en una transacción segura para verificar los cambios.
-*   **Procedimiento:**
-    1. Ejecutar `START TRANSACTION;`
-    2. Correr el script generado por la IA.
-    3. Inspeccionar el efecto.
-    4. Ejecutar `ROLLBACK;` si hay dudas, o `COMMIT;` solo si es correcto.
+## 1) Copia (siempre)
 
-## 3. Respaldo
-**Regla:** Antes de cualquier cambio estructural, se realiza un respaldo completo.
-*   **Comando en mi entorno:** `mysqldump -u root -p copia_trabajo > backup.sql`
+**Objetivo:** aislar el trabajo y evitar impacto sobre datos reales.
+
+### Comandos de referencia (PostgreSQL)
+
+```bash
+# crear copia a partir de una base plantilla del proyecto
+createdb -U postgres -T foodstore foodstore_copia
+
+# verificar conexión a la copia
+psql -U postgres -d foodstore_copia -c "SELECT current_database();"
+```
+
+**Regla:** toda prueba de TP se ejecuta en `foodstore_copia`.
+
+---
+
+## 2) Transacción (siempre antes de escribir)
+
+**Objetivo:** inspeccionar efectos antes de confirmar.
+
+### Flujo obligatorio
+
+```sql
+BEGIN;
+-- ejecutar script o comandos de prueba
+-- validar filas afectadas / errores / resultados
+ROLLBACK;  -- por defecto en etapa de prueba
+-- COMMIT; -- solo cuando la verificación es correcta y consciente
+```
+
+**Regla:** ningún `INSERT/UPDATE/DELETE/DDL` se aplica directo sin `BEGIN` previo.
+
+---
+
+## 3) Respaldo (siempre antes de DDL/migraciones)
+
+**Objetivo:** recuperación independiente si algo sale mal.
+
+### Comandos de referencia
+
+```bash
+# respaldo previo a cambios estructurales
+pg_dump -U postgres -d foodstore_copia -f TP2_Concurrencia_IA/respaldo_foodstore_copia.sql
+
+# restauración (si fuera necesaria)
+psql -U postgres -d foodstore_copia -f TP2_Concurrencia_IA/respaldo_foodstore_copia.sql
+```
+
+**Regla:** antes de `ALTER`, `DROP`, recreación de triggers o migraciones, se genera `pg_dump`.
+
+---
+
+## Checklist operativo mínimo
+
+- [ ] Estoy en `foodstore_copia` (no en otra base)
+- [ ] Abrí transacción con `BEGIN`
+- [ ] Probé casos válidos e inválidos
+- [ ] Cerré con `ROLLBACK` en pruebas o `COMMIT` consciente
+- [ ] Si hubo DDL: existe respaldo `pg_dump` previo

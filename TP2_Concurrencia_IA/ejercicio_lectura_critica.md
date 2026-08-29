@@ -1,14 +1,67 @@
 # Ejercicio de Lectura Crítica - Parte 3
 
 ## Script 1
-**Código original:** `UPDATE funcion SET activa = FALSE;`
-*   **Efecto real:** Al no tener una cláusula WHERE, este comando actualiza TODAS las filas de la tabla `funcion`, desactivando absolutamente todo, no solo las "retiradas de cartel".
-*   **Versión corregida:**
-    `UPDATE funcion SET activa = FALSE WHERE fecha_fin < CURRENT_DATE;`
+
+**Código original**
+```sql
+UPDATE funcion
+SET activa = FALSE;
+```
+
+### Qué filas afecta realmente
+Afecta **todas** las filas de `funcion` porque no tiene cláusula `WHERE`.
+
+### Por qué no coincide con la consigna
+La consigna dice “dar de baja funciones retiradas de cartel”, que implica un subconjunto (por ejemplo, funciones vencidas). El script original desactiva también funciones vigentes.
+
+### Versión corregida
+```sql
+UPDATE funcion
+SET activa = FALSE
+WHERE fecha_fin < CURRENT_DATE
+  AND activa = TRUE;
+```
+
+---
 
 ## Script 2
-**Código original:** `DELETE FROM categoria WHERE id NOT IN (SELECT categoria_id FROM producto);`
-*   **Efecto real:** En SQL, si la subconsulta devuelve al menos un valor NULL (por ejemplo, si hay un producto que tiene su `categoria_id` en NULL), la condición `NOT IN` evalúa como DESCONOCIDO (NULL) para toda la tabla. El resultado es que **no se borra absolutamente ninguna fila**, fallando silenciosamente.
-*   **Versión corregida:**
-    `DELETE FROM categoria WHERE id NOT IN (SELECT categoria_id FROM producto WHERE categoria_id IS NOT NULL);`
-    *(O usar NOT EXISTS, que es más seguro contra valores nulos).*
+
+**Código original**
+```sql
+DELETE FROM categoria
+WHERE id NOT IN (SELECT categoria_id FROM producto);
+```
+
+### Qué filas afecta realmente
+Si la subconsulta devuelve algún `NULL`, la expresión `NOT IN (...)` puede evaluar a `UNKNOWN` para todas las filas y terminar borrando **ninguna**, aunque existan categorías huérfanas.
+
+### Por qué no coincide con la consigna
+La consigna pide limpiar categorías sin productos asociados. Con `NOT IN` y posibles `NULL`, el comportamiento puede ser incorrecto/silencioso.
+
+### Versión corregida (opción segura)
+```sql
+DELETE FROM categoria c
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM producto p
+  WHERE p.id_categoria = c.id
+);
+```
+
+### Alternativa válida con `NOT IN` (si se filtran nulos)
+```sql
+DELETE FROM categoria
+WHERE id NOT IN (
+  SELECT p.id_categoria
+  FROM producto p
+  WHERE p.id_categoria IS NOT NULL
+);
+```
+
+---
+
+## Nota de seguridad aplicada
+Antes de ejecutar versiones corregidas:
+1. Trabajar sobre `foodstore_copia`.
+2. Ejecutar dentro de `BEGIN; ... ROLLBACK;` para inspección.
+3. Tomar respaldo previo si hubiera DDL/migración (`pg_dump`).

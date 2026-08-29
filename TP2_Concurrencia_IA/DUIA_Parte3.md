@@ -1,10 +1,10 @@
-# Declaración de Uso de IA (DUIA) - Parte 3 (Lectura Crítica)
+# Declaración de Uso de IA (DUIA) - Parte 3 (Lectura crítica)
 
 | Campo | Completar |
 | :--- | :--- |
-| **Herramienta** | Gemini (Asistente externo) |
-| **Spec o prompt utilizado** | "Analizar dos scripts SQL destructivos, explicar su efecto real en la base de datos y generar las versiones corregidas." |
-| **Qué generó** | El análisis del UPDATE sin WHERE (que afectaba toda la tabla) y el análisis del DELETE con NOT IN evaluando a NULL (que fallaba silenciosamente), junto con sus correcciones. |
-| **Qué se aceptó** | El análisis técnico de la falla lógica de los scripts y las consultas SQL corregidas. |
-| **Qué se modificó o descartó, y por qué** | Nada descartado. |
-| **Verificación realizada** | Se comprobó conceptualmente el riesgo de la falta de cláusula WHERE y el comportamiento del estándar SQL frente a comparaciones con valores NULL en subconsultas. |
+| **Herramienta** | Gemini (asistente externo) + validación conceptual manual |
+| **Spec o prompt utilizado** | "Analizar dos scripts SQL potencialmente peligrosos, explicar su efecto real y proponer versiones corregidas seguras." |
+| **Qué generó** | Diagnóstico del `UPDATE` sin `WHERE` y del `DELETE ... NOT IN (...)` con riesgo por `NULL`, más propuestas de corrección. |
+| **Qué se aceptó** | El diagnóstico base de ambos riesgos y la orientación para reescritura segura. |
+| **Qué se modificó o descartó, y por qué** | Se mejoró la corrección del segundo caso priorizando `NOT EXISTS`, por ser más robusto ante `NULL` y más claro para defensa oral. |
+| **Verificación realizada** | Se verificó lógicamente el efecto real de cada script y se reescribieron ambas sentencias en `ejercicio_lectura_critica.md`, incluyendo justificación de por qué la versión original no cumple la consigna. |

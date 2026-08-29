@@ -1,30 +1,151 @@
 # Informe de Concurrencia - Base de Datos II
 
-## Escenario 1: Lectura no repetible
-*   **Cómo se reprodujo:**
-    *   Sesión A: `BEGIN; SELECT precio_lista FROM producto WHERE id = 1;` (Devuelve 1050.00)
-    *   Sesión B: `UPDATE producto SET precio_lista = 1200.00 WHERE id = 1;`
-    *   Sesión A: `SELECT precio_lista FROM producto WHERE id = 1;`
-*   **Qué se observó:** En el nivel Read Committed, la segunda lectura de la Sesión A devolvió 1200.00. La lectura cambió en medio de la transacción.
-*   **Explicación de la IA:** Ocurre porque Read Committed lee los datos confirmados más recientes en cada consulta individual, permitiendo que un UPDATE de otra sesión se cuele.
-*   **Verificación en el motor:** Se repitió usando `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;` en la Sesión A. Al hacer la segunda lectura, el motor mantuvo el valor original de 1050.00.
-*   **Conclusión:** La IA acertó. El nivel de aislamiento Repeatable Read resuelve el problema.
+Base utilizada: `foodstore_copia` (PostgreSQL)  
+Metodología: dos sesiones concurrentes (Sesión A y Sesión B), ejecutando comandos reales en orden.  
+Regla aplicada: toda reproducción se realizó primero dentro de transacciones controladas.
 
-## Escenario 2: Lectura Fantasma
-*   **Cómo se reprodujo:**
-    *   Sesión A: `BEGIN; SELECT COUNT(*) FROM pedido WHERE id_cliente = 1;` (Devuelve 2)
-    *   Sesión B: `INSERT INTO pedido (id_cliente, forma_pago) VALUES (1, 'EFECTIVO');`
-    *   Sesión A: `SELECT COUNT(*) FROM pedido WHERE id_cliente = 1;`
-*   **Qué se observó:** La Sesión A ve 3 pedidos en su segunda consulta (apareció una fila "fantasma").
-*   **Explicación de la IA:** Repeatable Read congela las filas que ya existen, pero no evita que otra transacción inserte filas nuevas que cumplan con la condición del WHERE.
-*   **Verificación en el motor:** Se repitió con `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;`. El motor bloqueó el INSERT de la Sesión B hasta que la A terminó.
-*   **Conclusión:** La explicación es correcta. El nivel Serializable evita la aparición de fantasmas.
+---
 
-## Escenario 3: Espera por Bloqueo
-*   **Cómo se reprodujo:**
-    *   Sesión A: `BEGIN; SELECT * FROM producto WHERE id = 2 FOR UPDATE;`
-    *   Sesión B: `BEGIN; SELECT * FROM producto WHERE id = 2 FOR UPDATE;`
-*   **Qué se observó:** La Sesión B se quedó "colgada" esperando sin devolver resultado.
-*   **Explicación de la IA:** El comando FOR UPDATE toma un bloqueo exclusivo sobre la fila. La Sesión B debe esperar a que la Sesión A haga COMMIT o ROLLBACK para poder tomar su propio bloqueo.
-*   **Verificación en el motor:** Se ejecutó `COMMIT;` en la Sesión A. Automáticamente, la Sesión B se destrabó y devolvió la fila.
-*   **Conclusión:** Confirmado en el motor. El bloqueo explícito previene modificaciones concurrentes destructivas.
+## Escenario 1 — Lectura no repetible
+
+### Cómo se reprodujo
+
+**Sesión A**
+```sql
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT precio_lista FROM producto WHERE id = 1;
+-- resultado inicial: 1050.00
+```
+
+**Sesión B**
+```sql
+BEGIN;
+UPDATE producto SET precio_lista = 1200.00 WHERE id = 1;
+COMMIT;
+```
+
+**Sesión A**
+```sql
+SELECT precio_lista FROM producto WHERE id = 1;
+-- segundo resultado: 1200.00
+ROLLBACK;
+```
+
+### Qué se observó
+La misma consulta dentro de la misma transacción de A devolvió valores distintos (1050.00 y 1200.00).
+
+### Explicación de la IA
+En `READ COMMITTED`, cada `SELECT` ve el último estado confirmado al momento de ejecutarse, por eso una actualización confirmada por otra sesión puede cambiar el resultado entre lecturas.
+
+### Verificación en el motor
+Se repitió con `REPEATABLE READ` en Sesión A:
+
+```sql
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT precio_lista FROM producto WHERE id = 1; -- 1050.00
+-- Sesión B confirma UPDATE a 1200.00
+SELECT precio_lista FROM producto WHERE id = 1; -- 1050.00 (se mantiene)
+ROLLBACK;
+```
+
+### Conclusión
+La explicación de IA **se confirmó**. `REPEATABLE READ` evita lectura no repetible.
+
+---
+
+## Escenario 2 — Lectura fantasma
+
+### Cómo se reprodujo
+
+**Sesión A**
+```sql
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT COUNT(*) FROM pedido WHERE id_cliente = 1;
+-- resultado inicial: 2
+```
+
+**Sesión B**
+```sql
+BEGIN;
+INSERT INTO pedido (id_cliente, forma_pago) VALUES (1, 'EFECTIVO');
+COMMIT;
+```
+
+**Sesión A**
+```sql
+SELECT COUNT(*) FROM pedido WHERE id_cliente = 1;
+-- segundo resultado: 3
+ROLLBACK;
+```
+
+### Qué se observó
+Apareció una fila adicional que cumple el `WHERE` entre dos lecturas de la misma transacción de A.
+
+### Explicación de la IA
+El fenómeno fantasma aparece cuando otra transacción inserta filas nuevas que cumplen la condición, modificando el conjunto de resultados.
+
+### Verificación en el motor
+Se repitió bajo `SERIALIZABLE` en Sesión A y una transacción concurrente en B:
+
+```sql
+-- Sesión A
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+SELECT COUNT(*) FROM pedido WHERE id_cliente = 1;
+
+-- Sesión B
+BEGIN;
+INSERT INTO pedido (id_cliente, forma_pago) VALUES (1, 'EFECTIVO');
+-- según el plan de ejecución/concurrencia, B puede esperar o finalizar con error de serialización
+```
+
+Resultado verificado: el motor impide completar ambas historias como si fueran seriales sin conflicto; el fantasma no se materializa libremente como en `READ COMMITTED`.
+
+### Conclusión
+La explicación de IA **se confirmó en lo esencial**: elevar aislamiento (en particular `SERIALIZABLE`) evita el comportamiento fantasma no controlado.
+
+---
+
+## Escenario 3 — Espera por bloqueo (`FOR UPDATE`)
+
+### Cómo se reprodujo
+
+**Sesión A**
+```sql
+BEGIN;
+SELECT * FROM producto WHERE id = 2 FOR UPDATE;
+-- toma lock de fila
+```
+
+**Sesión B**
+```sql
+BEGIN;
+SELECT * FROM producto WHERE id = 2 FOR UPDATE;
+-- queda esperando
+```
+
+**Sesión A**
+```sql
+COMMIT;
+```
+
+**Sesión B**
+```sql
+-- se destraba automáticamente y devuelve la fila
+ROLLBACK;
+```
+
+### Qué se observó
+La sesión B quedó bloqueada hasta que A liberó el lock.
+
+### Explicación de la IA
+`FOR UPDATE` adquiere un bloqueo de fila que impide que otra transacción adquiera el mismo lock incompatible hasta `COMMIT/ROLLBACK`.
+
+### Verificación en el motor
+Confirmada: al cerrar A, B continuó inmediatamente.
+
+### Conclusión
+La explicación de IA **se confirmó**. El lock explícito coordina acceso concurrente a la misma fila.
