@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 2 - Consultas lentas, EXPLAIN y optimizacion medida/indices_propuestos.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 2 - Consultas lentas, EXPLAIN y optimizacion medida/queries_candidatas.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 4 - Consultas resumen y subconsultas bajo especificacion precisa/alternativa_spec_1_cte.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 4 - Consultas resumen y subconsultas bajo especificacion precisa/alternativa_spec_2_join.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 4 - Consultas resumen y subconsultas bajo especificacion precisa/solucion_spec_1_agregacion.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 4 - Consultas resumen y subconsultas bajo especificacion precisa/solucion_spec_2_subconsulta.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 4 - Consultas resumen y subconsultas bajo especificacion precisa/verificacion_equivalencia.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 5 -Competencia de optimizacion entre equipos/consulta_base.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 5 -Competencia de optimizacion entre equipos/optimizacion_propuesta_1.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/TP3_Optimización_de_Índices/Parte 5 -Competencia de optimizacion entre equipos/optimizacion_propuesta_2.sql" dialect="GenericSQL" />
+  </component>
+</project>
