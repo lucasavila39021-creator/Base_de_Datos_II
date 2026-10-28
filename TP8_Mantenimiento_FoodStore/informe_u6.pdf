@@ -1,0 +1,38 @@
+============================================================
+SIMULACRO DE RESTAURACIÓN - FOODSTORE (LUCAS AVILA)
+============================================================
+lucas@linuxmint:~/Documentos/TP_Base_de_Datos_II/Unidad6$ createdb -h localhost -p 5432 -U postgres foodstore_restore_test
+lucas@linuxmint:~/Documentos/TP_Base_de_Datos_II/Unidad6$ time pg_restore -h localhost -p 5432 -U postgres -d foodstore_restore_test --no-owner --no-privileges backups/respaldo_foodstore_20261028_164800.dump
+
+real    0m2.145s
+user    0m0.038s
+sys     0m0.012s
+
+============================================================
+VALIDACIÓN DE INTEGRIDAD POST-RESTAURACIÓN
+============================================================
+foodstore_restore_test=# SELECT 'categoria' AS tabla, COUNT(*) AS filas FROM categoria
+UNION ALL SELECT 'cliente', COUNT(*) FROM cliente
+UNION ALL SELECT 'producto', COUNT(*) FROM producto
+UNION ALL SELECT 'pedido', COUNT(*) FROM pedido
+UNION ALL SELECT 'detalle_pedido', COUNT(*) FROM detalle_pedido;
+     tabla      | filas
+----------------+--------
+ categoria      |      2
+ cliente        |  20000
+ producto       |  50003
+ pedido         | 200005
+ detalle_pedido | 499571
+(5 rows)
+
+foodstore_restore_test=# SELECT COUNT(*) AS productos_invalidos FROM producto WHERE precio < 0 OR stock < 0;
+ productos_invalidos
+---------------------
+                   0
+(1 row)
+
+foodstore_restore_test=# SELECT COUNT(*) AS detalles_invalidos FROM detalle_pedido WHERE cantidad <= 0 OR precio_unitario < 0;
+ detalles_invalidos
+--------------------
+                  0
+(1 row)
