@@ -1,0 +1,5 @@
+[2026-10-28 16:48:00] [INFO] Iniciando respaldo de la base de datos 'foodstore'.
+[2026-10-28 16:48:00] [INFO] Destino: /home/lucas/Documentos/TP_Base_de_Datos_II/Unidad6/backups/respaldo_foodstore_20261028_164800.dump
+[2026-10-28 16:48:02] [INFO] Respaldo generado con éxito.
+[2026-10-28 16:48:02] [INFO] Tamaño final: 12854 KB
+[2026-10-28 16:48:02] [INFO] Ruta absoluta: /home/lucas/Documentos/TP_Base_de_Datos_II/Unidad6/backups/respaldo_foodstore_20261028_164800.dump
